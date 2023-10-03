@@ -7,27 +7,29 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
-int create_socket(int *domain, int *type, int *protocol) {
-  int s;
+int main() {
+  struct sockaddr_storage incoming;
+  struct addrinfo hints, *res;
 
-  if ((s = socket(domain, type, protocol)) == -1) {
-    fprintf(stderr, "Error creating socket \n");
-    fprintf(stderr, errno);
-    return -1;
-  }
+  memset(&hints, 0, sizeof hints);
+  hints.ai_family = PF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags = AI_PASSIVE;
 
-  return s;
-}
-
-int main(int argc, char *argv[]) {
-  if (argc != 2) {
-    fprintf(stderr, "Expected port number as argument \n");
-    return 1;
-  }
+  getaddrinfo(NULL, "80", &hints, &res);
 
   // open tcp connection
-  int conn = create_socket(PF_INET, SOCK_STREAM, 0);
-  fprintf(stdout, "Socket created on port: %s \n", argv[1]);
+  int sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+  fprintf(stdout, "Socket created \n");
+
+  bind(sockfd, res->ai_addr, res->ai_addrlen);
+  printf("%s \n", "File descriptor bound");
+
+  listen(sockfd, 10);
+  printf("%s \n", "File descriptor listening");
+
+  socklen_t incoming_size = sizeof(incoming);
+  int new_fd = accept(sockfd, (struct sockaddr *)&incoming, &incoming_size);
 
   return 0;
 }
